@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Bar and Line</title>
+    <SCRIPT src = "http://d3js.org/d3.v3.min.js"></SCRIPT>
+    <SCRIPT src = "js/underscore-min.js"></SCRIPT>
+  </head>
+  <body>
+    <script type="text/javascript">
+    /*Bar and Line is likely going to require looking at the following videos: Paths, enter
+    I would start by making a barchart of volume to date, but a reverse bar chart*/
+      d3.json('json/barandline.json', function(data){
+
+        var width = 500;
+        var height = 500;
+
+        var lowVol = _.min(_.pluck(data,'zval'));
+        var highVol = _.max(_.pluck(data,'zval'));
+
+
+
+      })
+    </script>
+  </body>
+</html>
