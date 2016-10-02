@@ -5,22 +5,110 @@
     <title>Bar and Line</title>
     <SCRIPT src = "http://d3js.org/d3.v3.min.js"></SCRIPT>
     <SCRIPT src = "js/underscore-min.js"></SCRIPT>
+    <SCRIPT src = "js/moment.min.js"></SCRIPT>
   </head>
   <body>
     <script type="text/javascript">
     /*Bar and Line is likely going to require looking at the following videos: Paths, enter
-    I would start by making a barchart of volume to date, but a reverse bar chart*/
+    I would start by making a barchart of volume to date, but a reverse bar chart, fix the
+    width and height the height a fucntion of that data*/
+
+    var margin = {top: 20, right: 20, bottom: 70, left: 40},
+        width = 600 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+        var parseDate = d3.time.format("%b-%d-%Y").parse;
+
+        //set up the scales and the axi without adding the domains with the data until later
+
+
+        var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+
+        var y = d3.scale.linear().range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+                    .scale(x)
+                    .orient("bottom")
+                    .ticks(d3.time.month, 1)
+                    .tickFormat(d3.time.format("%B %Y"))
+                    ;
+
+
+        var yAxis = d3.svg.axis()
+                    .scale(y)
+                    .orient("left")
+                    .ticks(10);
+
+        //will want to add in a zaxis
+
+        var svg = d3.select("body").append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.bottom + margin.top + 50)
+              .append("g")
+                  .attr("transform", "translate(" +margin.left + "," + margin.top + ")");
+
       d3.json('json/barandline.json', function(data){
 
-        var width = 500;
-        var height = 500;
+        //parse the dates
+        data.forEach(function(d){
+          d.xval = parseDate(d.xval);
+        });
 
-        var lowVol = _.min(_.pluck(data,'zval'));
-        var highVol = _.max(_.pluck(data,'zval'));
+        //sort data by date, from ealiest to latest
+        data = _.sortBy(data, function(o){ return o.xval});
+
+        var minVol = _.min(_.pluck(data,'zval'));
+        var maxVol = _.max(_.pluck(data,'zval'));
+        var minDate = _.min(_.pluck(data,'xval'));
+        var maxDate = _.max(_.pluck(data,'xval'));
+        var numberofItems = data.length;
+
+        //configure the domain of the x and y scale with the data
+
+        x.domain(data.map(function(d) {  return d.xval; })); //maps the data of the x val to the x axis
+        var arr =_.pluck(data, 'xval');
+        /*arr.forEach(function(part,index){
+          arr[index]= moment(part).format("MMMM Y");
+        });
+
+        console.log(_.uniq(arr));
+        xAxis.tickValues(_.uniq(arr));*/
+
+        y.domain([0, d3.max(data, function(d){ return d.zval})]); //sets the domain of the y axis as a number between 0 and the highest value
 
 
+        //append this group to the svg
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")") //moves it down to the bottom
+            .call(xAxis)
+          .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".5em")
+            .attr("transform", "rotate(-45)"); //rotates the x axis text
 
-      })
+            //append another group to the svg
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+              .append("text")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .attr("transform", "rotate(-90)")
+                .text("Volume");
+
+    svg.selectAll("bar")
+        .data(data)
+        .enter().append("rect")
+          .style("fill", "steelblue")
+          .attr("x", function(d){return x(d.xval);})
+          .attr("width", x.rangeBand())
+          .attr("y", function(d){return y(d.zval);})
+          .attr("height", function(d){ return height - y(d.zval);});
+      });
+
     </script>
   </body>
 </html>
