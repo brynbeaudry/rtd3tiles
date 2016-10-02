@@ -19,10 +19,30 @@
 
         var parseDate = d3.time.format("%b-%d-%Y").parse;
 
-        //set up the scales and the axi without adding the domains with the data until later
+        var svg = d3.select("body").append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.bottom + margin.top + 50)
+              .append("g")
+                  .attr("transform", "translate(" +margin.left + "," + margin.top + ")");
 
+      d3.json('json/barandline.json', function(data){
 
-        var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+        //parse the dates
+        data.forEach(function(d){
+          d.xval = parseDate(d.xval);
+        });
+
+        //sort data by date, from ealiest to latest
+        //data = _.sortBy(data, function(o){ return o.xval});
+
+        var minVol = _.min(_.pluck(data,'zval'));
+        var maxVol = _.max(_.pluck(data,'zval'));
+        var minDate = _.min(_.pluck(data,'xval'));
+        var maxDate = _.max(_.pluck(data,'xval'));
+        var numberofItems = data.length;
+
+        //var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+        var x = d3.time.scale().range([width/data.length/2, width-width/data.length/2]);
 
         var y = d3.scale.linear().range([height, 0]);
 
@@ -41,31 +61,11 @@
 
         //will want to add in a zaxis
 
-        var svg = d3.select("body").append("svg")
-                  .attr("width", width + margin.left + margin.right)
-                  .attr("height", height + margin.bottom + margin.top + 50)
-              .append("g")
-                  .attr("transform", "translate(" +margin.left + "," + margin.top + ")");
-
-      d3.json('json/barandline.json', function(data){
-
-        //parse the dates
-        data.forEach(function(d){
-          d.xval = parseDate(d.xval);
-        });
-
-        //sort data by date, from ealiest to latest
-        data = _.sortBy(data, function(o){ return o.xval});
-
-        var minVol = _.min(_.pluck(data,'zval'));
-        var maxVol = _.max(_.pluck(data,'zval'));
-        var minDate = _.min(_.pluck(data,'xval'));
-        var maxDate = _.max(_.pluck(data,'xval'));
-        var numberofItems = data.length;
-
         //configure the domain of the x and y scale with the data
-
-        x.domain(data.map(function(d) {  return d.xval; })); //maps the data of the x val to the x axis
+        // Set scale domains.
+        //x.domain(d3.extent(data, function(d) { return d.xval; }));
+        x.domain([minDate-1, maxDate])
+        //x.domain(data.map(function(d) {  return d.xval; })); //maps the data of the x val to the x axis
         var arr =_.pluck(data, 'xval');
         /*arr.forEach(function(part,index){
           arr[index]= moment(part).format("MMMM Y");
@@ -98,13 +98,16 @@
                 .style("text-anchor", "end")
                 .attr("transform", "rotate(-90)")
                 .text("Volume");
-
+    var groupSpacing = data.length;
     svg.selectAll("bar")
         .data(data)
         .enter().append("rect")
           .style("fill", "steelblue")
-          .attr("x", function(d){return x(d.xval);})
-          .attr("width", x.rangeBand())
+          .style("stroke", "darkblue")
+          //.attr("x", function(d){return x(d.xval) ;})
+          .attr("x", function(d) { return x(d.xval) - width/(data.length)/2; })
+          //.attr("width", x.rangeBand())
+          .attr("width", width / data.length /1.5 - groupSpacing)
           .attr("y", function(d){return y(d.zval);})
           .attr("height", function(d){ return height - y(d.zval);});
       });
