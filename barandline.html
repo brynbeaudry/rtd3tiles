@@ -6,6 +6,7 @@
     <SCRIPT src = "http://d3js.org/d3.v3.min.js"></SCRIPT>
     <SCRIPT src = "js/underscore-min.js"></SCRIPT>
     <SCRIPT src = "js/moment.min.js"></SCRIPT>
+    <link rel="stylesheet" type="text/css" href="style/barandline.css">
   </head>
   <body>
     <script type="text/javascript">
@@ -13,7 +14,7 @@
     I would start by making a barchart of volume to date, but a reverse bar chart, fix the
     width and height the height a fucntion of that data*/
 
-    var margin = {top: 20, right: 20, bottom: 70, left: 40},
+    var margin = {top: 20, right: 40, bottom: 70, left: 40},
         width = 600 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
 
@@ -33,18 +34,22 @@
         });
 
         //sort data by date, from ealiest to latest
-        //data = _.sortBy(data, function(o){ return o.xval});
+        data = _.sortBy(data, function(o){ return o.xval});
 
         var minVol = _.min(_.pluck(data,'zval'));
         var maxVol = _.max(_.pluck(data,'zval'));
         var minDate = _.min(_.pluck(data,'xval'));
         var maxDate = _.max(_.pluck(data,'xval'));
+        var minScore = _.min(_.pluck(data,'yval'));
+        var maxScore = _.max(_.pluck(data,'yval'));
         var numberofItems = data.length;
 
         //var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
         var x = d3.time.scale().range([width/data.length/2, width-width/data.length/2]);
 
         var y = d3.scale.linear().range([height, 0]);
+
+        var z = d3.scale.linear().range([height, 0]);
 
         var xAxis = d3.svg.axis()
                     .scale(x)
@@ -61,10 +66,15 @@
 
         //will want to add in a zaxis
 
+        var zAxis = d3.svg.axis()
+                    .scale(z)
+                    .orient("right")
+                    .ticks(10);
+
         //configure the domain of the x and y scale with the data
         // Set scale domains.
         //x.domain(d3.extent(data, function(d) { return d.xval; }));
-        x.domain([minDate-1, maxDate])
+        x.domain([minDate-10, maxDate])
         //x.domain(data.map(function(d) {  return d.xval; })); //maps the data of the x val to the x axis
         var arr =_.pluck(data, 'xval');
         /*arr.forEach(function(part,index){
@@ -75,6 +85,13 @@
         xAxis.tickValues(_.uniq(arr));*/
 
         y.domain([0, d3.max(data, function(d){ return d.zval})]); //sets the domain of the y axis as a number between 0 and the highest value
+
+        z.domain([0, 100]);
+
+        var valueline = d3.svg.line()
+          	.x(function (d) { return x(d.xval) - (width/data.length/4); })
+          	.y(function (d) { return z(d.yval); });
+
 
 
         //append this group to the svg
@@ -98,18 +115,36 @@
                 .style("text-anchor", "end")
                 .attr("transform", "rotate(-90)")
                 .text("Volume");
+
+            svg.append("g")
+              .attr("class", "z axis")
+              .attr("transform", "translate("+width+", 0)")
+              .call(zAxis)
+            .append("text")
+              .attr("y", 6)
+              .attr("dy", "-.7em")
+              .attr("dx", "0em")
+              .style("text-anchor", "end")
+              .attr("transform", "rotate(-90)")
+              .text("NPS Score");
+
+
     var groupSpacing = data.length;
     svg.selectAll("bar")
         .data(data)
         .enter().append("rect")
           .style("fill", "steelblue")
           .style("stroke", "darkblue")
+          .style("z-index", function(d,i){ return -i;})
           //.attr("x", function(d){return x(d.xval) ;})
           .attr("x", function(d) { return x(d.xval) - width/(data.length)/2; })
           //.attr("width", x.rangeBand())
           .attr("width", width / data.length /1.5 - groupSpacing)
           .attr("y", function(d){return y(d.zval);})
           .attr("height", function(d){ return height - y(d.zval);});
+    svg.append("path")
+          .attr("class", "z-axis")
+          .attr("d", valueline(data));
       });
 
     </script>
