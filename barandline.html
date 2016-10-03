@@ -130,9 +130,18 @@
 
 
     var groupSpacing = data.length;
-    svg.selectAll("bar")
-        .data(data)
-        .enter().append("rect")
+var bars =  svg.selectAll("bar")
+        .data(data);
+bars.exit().remove();
+
+bars.transition().duration(1000)
+      .attr("x", function(d) { return x(d.xval) - width/(data.length)/2; })
+      //.attr("width", x.rangeBand())
+      .attr("width", width / data.length /1.5 - groupSpacing)
+      .attr("y", function(d){return y(d.zval);})
+      .attr("height", function(d){ return height - y(d.zval);});
+
+        bars.enter().append("rect")
           .style("fill", "steelblue")
           .style("stroke", "darkblue")
           .style("z-index", function(d,i){ return -i;})
@@ -140,9 +149,12 @@
           .attr("x", function(d) { return x(d.xval) - width/(data.length)/2; })
           //.attr("width", x.rangeBand())
           .attr("width", width / data.length /1.5 - groupSpacing)
+          .attr("y", height)
+          .attr("height", 0)
+          .transition().duration(1000)
           .attr("y", function(d){return y(d.zval);})
           .attr("height", function(d){ return height - y(d.zval);});
-    svg.append("path")
+  var line = svg.append("path")
           .attr("class", "z-axis")
           .attr("d", valueline(data));
       });
