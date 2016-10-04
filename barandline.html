@@ -128,18 +128,11 @@
               .attr("transform", "rotate(-90)")
               .text("NPS Score");
 
-
-    var groupSpacing = data.length;
+var groupSpacing = data.length;
 var bars =  svg.selectAll("bar")
         .data(data);
 bars.exit().remove();
 
-bars.transition().duration(1000)
-      .attr("x", function(d) { return x(d.xval) - width/(data.length)/2; })
-      //.attr("width", x.rangeBand())
-      .attr("width", width / data.length /1.5 - groupSpacing)
-      .attr("y", function(d){return y(d.zval);})
-      .attr("height", function(d){ return height - y(d.zval);});
 
         bars.enter().append("rect")
           .style("fill", "steelblue")
@@ -157,6 +150,14 @@ bars.transition().duration(1000)
   var line = svg.append("path")
           .attr("class", "z-axis")
           .attr("d", valueline(data));
+
+          var totalLength = line.node().getTotalLength();
+        line
+          .attr("stroke-dasharray", totalLength + " " + totalLength)
+          .attr("stroke-dashoffset", totalLength)
+          .transition().duration(1000)
+          .ease("linear")
+          .attr("stroke-dashoffset", 0);
       });
 
     </script>
