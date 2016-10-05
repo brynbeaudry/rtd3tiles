@@ -28,24 +28,56 @@
 
       d3.json('json/barandline.json', function(data){
 
-        //parse the dates
-        data.forEach(function(d){
-          d.xval = parseDate(d.xval);
-        });
+        function determineBreakDownType(){
+          var breakdowntypeArr = _.uniq(_.pluck(data, 'breakdowntype'));
+          if(breakdowntypeArr.length > 1){
+            return false;
+          }
+          return breakdowntypeArr[0];
+        }
+        var breakdowntype = determineBreakDownType();
 
-        //sort data by date, from ealiest to latest
-        data = _.sortBy(data, function(o){ return o.xval});
+        if(breakdowntype=="YW" || breakdowntype=="YMD" || breakdowntype=="YM"){
+        //Your data demands time on the x axis friend-o!
+              //parse the dates, converts all dates in the data into standard date objects that can be sorted.
+              data.forEach(function(d){
+                d.xval = parseDate(d.xval);
+              });
 
-        var minVol = _.min(_.pluck(data,'zval'));
-        var maxVol = _.max(_.pluck(data,'zval'));
-        var minDate = _.min(_.pluck(data,'xval'));
-        var maxDate = _.max(_.pluck(data,'xval'));
-        var minScore = _.min(_.pluck(data,'yval'));
-        var maxScore = _.max(_.pluck(data,'yval'));
-        var numberofItems = data.length;
+              //sort data by date, from ealiest to latest
+              data = _.sortBy(data, function(o){ return o.xval});
 
-        //var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
-        var x = d3.time.scale().range([width/data.length/2, width-width/data.length/2]);
+              //merge the dates
+              for(var i=0; i<data.length-1 ; i++){
+                console.log(typeof data[i].xval); //console.log(data[i+1].xval);
+                if(data[i+1]){
+                    if(+data[i].xval == +data[(i+1)].xval){
+                    data[i].yval = (data[i].yval + data[i+1].yval)/2;
+                    data[i].zval = data[i].zval + data[i+1].zval;
+                    data.splice(i+1, 1);
+                    i = i-1;
+                  }
+                }
+              }
+
+              var minDate = _.min(_.pluck(data,'xval'));
+              var maxDate = _.max(_.pluck(data,'xval'));
+
+              //set the scale
+              //var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+              var x = d3.time.scale().range([width/data.length/2, width-width/data.length/2]);
+
+      }else{
+        alert("your data type isn't recognized.");
+      }
+
+
+
+      var minVol = _.min(_.pluck(data,'zval'));
+      var maxVol = _.max(_.pluck(data,'zval'));
+      var minScore = _.min(_.pluck(data,'yval'));
+      var maxScore = _.max(_.pluck(data,'yval'));
+      var numberofItems = data.length;
 
         var y = d3.scale.linear().range([height, 0]);
 
@@ -84,13 +116,13 @@
         console.log(_.uniq(arr));
         xAxis.tickValues(_.uniq(arr));*/
 
-        y.domain([0, d3.max(data, function(d){ return d.zval})]); //sets the domain of the y axis as a number between 0 and the highest value
+        z.domain([0, d3.max(data, function(d){ return d.zval})]); //sets the domain of the z axis as a number between 0 and the highest value
 
-        z.domain([0, 100]);
+        y.domain([0, 100]);
 
         var valueline = d3.svg.line()
           	.x(function (d) { return x(d.xval) - (width/data.length/4); })
-          	.y(function (d) { return z(d.yval); });
+          	.y(function (d) { return y(d.yval); });
 
 
 
@@ -114,7 +146,7 @@
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
                 .attr("transform", "rotate(-90)")
-                .text("Volume");
+                .text("NPS Score");
 
             svg.append("g")
               .attr("class", "z axis")
@@ -126,12 +158,12 @@
               .attr("dx", "0em")
               .style("text-anchor", "end")
               .attr("transform", "rotate(-90)")
-              .text("NPS Score");
+              .text("Volume");
 
 var groupSpacing = data.length;
 var bars =  svg.selectAll("bar")
         .data(data);
-bars.exit().remove();
+        bars.exit().remove();
 
 
         bars.enter().append("rect")
@@ -143,21 +175,26 @@ bars.exit().remove();
           //.attr("width", x.rangeBand())
           .attr("width", width / data.length /1.5 - groupSpacing)
           .attr("y", height)
+          .style("opacity", 0)
           .attr("height", 0)
           .transition().duration(1000)
-          .attr("y", function(d){return y(d.zval);})
-          .attr("height", function(d){ return height - y(d.zval);});
+          //opacity low to high
+          .attr("y", function(d){return z(d.zval);})
+          .attr("height", function(d){ return height - z(d.zval);})
+          .style("opacity", 1);
   var line = svg.append("path")
-          .attr("class", "z-axis")
+          .attr("class", "y line")
+          .style("opacity", 0)
           .attr("d", valueline(data));
 
           var totalLength = line.node().getTotalLength();
         line
           .attr("stroke-dasharray", totalLength + " " + totalLength)
           .attr("stroke-dashoffset", totalLength)
-          .transition().duration(1000)
+          .transition().delay(1000).duration(1500)
           .ease("linear")
-          .attr("stroke-dashoffset", 0);
+          .attr("stroke-dashoffset", 0)
+          .style("opacity", 1);
       });
 
     </script>
