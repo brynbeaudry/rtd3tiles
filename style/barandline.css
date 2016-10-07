@@ -1,8 +1,8 @@
 body { font: 12px Arial;}
 
 path {
-    stroke: red;
-    stroke-width: 2;
+    stroke: #53b3e0;
+    stroke-width: 1.5;
     fill: none;
     z-index: 10;
 }
@@ -22,14 +22,18 @@ div.tooltip {
     height: auto;
     padding: 2px;
     font: 12px sans-serif;
-    background: lightsteelblue;
-    border: 0px;
-    border-radius: 8px;
+    background: white;
+    border: 1px;
+    border-style: solid;;
+    border-color: lightblue;
+    border-width: 1;
+    border-radius: 0px;
     pointer-events: none;
 }
 
 circle {
 
   fill: white;
-  stroke: dimgrey;
+  stroke: #53b3e0;
+  stroke-width: 2;
 }

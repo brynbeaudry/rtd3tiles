@@ -14,4 +14,5 @@ Make sure if the value are for the same date that they are aggregated
 
 Good, bar and line:
 
-Make Jquery tooltip: 
+Make Jquery tooltip:
+http://codepen.io/coquin/pen/BNpQoO
