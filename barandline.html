@@ -7,6 +7,7 @@
     <SCRIPT src = "js/underscore-min.js"></SCRIPT>
     <SCRIPT src = "js/moment.min.js"></SCRIPT>
     <link rel="stylesheet" type="text/css" href="style/barandline.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   </head>
   <body>
     <script type="text/javascript">
@@ -19,6 +20,7 @@
         height = 300 - margin.top - margin.bottom;
 
         var parseDate = d3.time.format("%b-%d-%Y").parse;
+        var formatDate = d3.time.format("%b-%d-%Y");
 
         var svg = d3.select("body").append("svg")
                   .attr("width", width + margin.left + margin.right)
@@ -39,6 +41,8 @@
 
         if(breakdowntype=="YW" || breakdowntype=="YMD" || breakdowntype=="YM"){
         //Your data demands time on the x axis friend-o!
+        //these swtiches are primarily used for the client to show the output of the ticks on the X axis, but at least here,
+        //we know they are dates, so the dates are dealt with accordingly.
               //parse the dates, converts all dates in the data into standard date objects that can be sorted.
               data.forEach(function(d){
                 d.xval = parseDate(d.xval);
@@ -47,7 +51,9 @@
               //sort data by date, from ealiest to latest
               data = _.sortBy(data, function(o){ return o.xval});
 
-              //merge the dates
+              //merge the dates allows objects in the array with the same date to merge.
+              //requires the above sort, in order to work properly
+              //The nPS scores of the duplicate dates are averaged, and the volume of the merged objects are combined(sum)
               for(var i=0; i<data.length-1 ; i++){
                 console.log(typeof data[i].xval); //console.log(data[i+1].xval);
                 if(data[i+1]){
@@ -125,6 +131,11 @@
           	.y(function (d) { return y(d.yval); });
 
 
+        //define the div for the tooltip
+        var div = d3.select("body").append("div")
+                  .attr("class", "tooltip")
+                  .style("opacity", 0);
+
 
         //append this group to the svg
         svg.append("g")
@@ -182,10 +193,48 @@ var bars =  svg.selectAll("bar")
           .attr("y", function(d){return z(d.zval);})
           .attr("height", function(d){ return height - z(d.zval);})
           .style("opacity", 1);
+
+
   var line = svg.append("path")
           .attr("class", "y line")
           .style("opacity", 0)
           .attr("d", valueline(data));
+
+          svg.selectAll("dot")
+          //filter without some defintion just return all of the points
+            .data(data)
+            .enter()
+              .append("circle")
+              //again we aren't really filtering anything here, but we could.
+              //here we are filtering out non-value points on the y axis
+              .filter(function(d){ return d.yval !== null;})
+              .attr("r", 5)
+              .attr("cx", function(d){ return x(d.xval) - (width/data.length/4);})
+              .attr("cy", function(d){ return y(d.yval);})
+              .style("opacity", 0)
+
+              .on("mouseover", function(d){
+                  div.transition()
+                      .duration(200)
+                      .style("opacity", 0.9);
+                  d3.select(this).attr("r", 10);
+                  var formattedDate = formatDate(d.xval);
+                  div.html(formattedDate + '<br>' + d.yval)
+                      .style("left", (d3.event.pageX) + "px")
+                      .style("top", (d3.event.pageY) - 50 + "px");
+              })
+              .on("mouseout", function(d){
+                  div.transition()
+                      .duration(500)
+                      .style("opacity", 0);
+                  d3.select(this).attr("r", 5);
+              })
+              //animate the dots
+              .transition().duration(2000)
+              .style("opacity", 1)
+              ;
+
+
 
           var totalLength = line.node().getTotalLength();
         line
@@ -195,6 +244,7 @@ var bars =  svg.selectAll("bar")
           .ease("linear")
           .attr("stroke-dashoffset", 0)
           .style("opacity", 1);
+
       });
 
     </script>

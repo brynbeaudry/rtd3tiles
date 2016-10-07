@@ -11,3 +11,7 @@ What exactly is the maximum character length for the label? Are you talking abou
 If(YW)   then sort by time, and use a timescale.
 
 Make sure if the value are for the same date that they are aggregated
+
+Good, bar and line:
+
+Make Jquery tooltip: 
