@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Bar and Line</title>
+    <SCRIPT src = "http://d3js.org/d3.v3.min.js"></SCRIPT>
+    <SCRIPT src = "js/underscore-min.js"></SCRIPT>
+    <SCRIPT src = "js/moment.min.js"></SCRIPT>
+    <link rel="stylesheet" type="text/css" href="style/barandline.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+    /*Bar and Line is likely going to require looking at the following videos: Paths, enter
+    I would start by making a barchart of volume to date, but a reverse bar chart, fix the
+    width and height the height a fucntion of that data*/
+
+    var margin = {top: 20, right: 40, bottom: 70, left: 40},
+        width = 600 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+        var parseDate = d3.time.format("%b-%d-%Y").parse;
+        var formatDate = d3.time.format("%B %d %Y");
+
+        var svg = d3.select("body").append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.bottom + margin.top + 50)
+              .append("g")
+                  .attr("transform", "translate(" +margin.left + "," + margin.top + ")");
+
+      d3.json('json/barandline.json', function(data){
+
+        function determineBreakDownType(){
+          var breakdowntypeArr = _.uniq(_.pluck(data, 'breakdowntype'));
+          if(breakdowntypeArr.length > 1){
+            return false;
+          }
+          return breakdowntypeArr[0];
+        }
+        var breakdowntype = determineBreakDownType();
+
+        if(breakdowntype=="YW" || breakdowntype=="YMD" || breakdowntype=="YM"){
+        //Your data demands time on the x axis friend-o!
+        //these swtiches are primarily used for the client to show the output of the ticks on the X axis, but at least here,
+        //we know they are dates, so the dates are dealt with accordingly.
+              //parse the dates, converts all dates in the data into standard date objects that can be sorted.
+              data.forEach(function(d){
+                d.xval = parseDate(d.xval);
+              });
+
+              //sort data by date, from ealiest to latest
+              data = _.sortBy(data, function(o){ return o.xval});
+
+              //merge the dates allows objects in the array with the same date to merge.
+              //requires the above sort, in order to work properly
+              //The nPS scores of the duplicate dates are averaged, and the volume of the merged objects are combined(sum)
+              for(var i=0; i<data.length-1 ; i++){
+                console.log(typeof data[i].xval); //console.log(data[i+1].xval);
+                if(data[i+1]){
+                    if(+data[i].xval == +data[(i+1)].xval){
+                    data[i].yval = (data[i].yval + data[i+1].yval)/2;
+                    data[i].zval = data[i].zval + data[i+1].zval;
+                    data.splice(i+1, 1);
+                    i = i-1;
+                  }
+                }
+              }
+
+              var minDate = _.min(_.pluck(data,'xval'));
+              var maxDate = _.max(_.pluck(data,'xval'));
+
+              //set the scale
+              //var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+              var x = d3.time.scale()
+                  .domain([minDate, maxDate])
+                  .range([0, width]);
+
+              var fakeOrdinalXScale = d3.scale.ordinal()
+                  .domain(_.pluck(data, 'xval'))
+                  .rangeRoundBands([0, width], 0.4, 0);
+
+      }else{
+        alert("your data type isn't recognized.");
+      }
+
+
+
+      var minVol = _.min(_.pluck(data,'zval'));
+      var maxVol = _.max(_.pluck(data,'zval'));
+      var minScore = _.min(_.pluck(data,'yval'));
+      var maxScore = _.max(_.pluck(data,'yval'));
+      var numberofItems = data.length;
+
+        var y = d3.scale.linear().range([height, 0]);
+
+        var z = d3.scale.linear().range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+                    .scale(x)
+                    .orient("bottom")
+                    .ticks(d3.time.month, 1)
+                    .tickFormat(function(d){ return moment(d).format("MMM YYYY")})
+                    ;
+
+
+        var yAxis = d3.svg.axis()
+                    .scale(y)
+                    .orient("left")
+                    .ticks(10);
+
+        //will want to add in a zaxis
+
+        var zAxis = d3.svg.axis()
+                    .scale(z)
+                    .orient("right")
+                    .ticks(10);
+
+        //configure the domain of the x and y scale with the data
+        // Set scale domains.
+        //x.domain(d3.extent(data, function(d) { return d.xval; }));
+        //x.domain([minDate-10, maxDate])
+        //x.domain(data.map(function(d) {  return d.xval; })); //maps the data of the x val to the x axis
+        var arr =_.pluck(data, 'xval');
+        /*arr.forEach(function(part,index){
+          arr[index]= moment(part).format("MMMM Y");
+        });
+
+        console.log(_.uniq(arr));
+        xAxis.tickValues(_.uniq(arr));*/
+
+        z.domain([0, d3.max(data, function(d){ return d.zval})]); //sets the domain of the z axis as a number between 0 and the highest value
+
+        y.domain([0, 100]);
+
+        var valueline = d3.svg.line()
+          	.x(function(d){return fakeOrdinalXScale(d.xval) + fakeOrdinalXScale.rangeBand()/2; })
+          	.y(function (d) { return y(d.yval); });
+
+
+        //define the div for the tooltip
+        var div = d3.select("body").append("div")
+                  .attr("class", "tooltip")
+                  .style("opacity", 0);
+
+
+        //append this group to the svg
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")") //moves it down to the bottom
+            .call(xAxis)
+          .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".5em")
+            .attr("transform", "rotate(-45)"); //rotates the x axis text
+
+            //append another group to the svg
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+              .append("text")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .attr("transform", "rotate(-90)")
+                .text("NPS Score");
+
+            svg.append("g")
+              .attr("class", "z axis")
+              .attr("transform", "translate("+width+", 0)")
+              .call(zAxis)
+            .append("text")
+              .attr("y", 6)
+              .attr("dy", "-.7em")
+              .attr("dx", "0em")
+              .style("text-anchor", "end")
+              .attr("transform", "rotate(-90)")
+              .text("Volume");
+
+var groupSpacing = data.length;
+var bars =  svg.selectAll("bar")
+        .data(data);
+        bars.exit().remove();
+
+
+        bars.enter().append("rect")
+          .style("fill", "#f4d142")
+          .style("stroke", "#bca134")
+          .style("z-index", function(d,i){ return -i;})
+          //.attr("x", function(d){return x(d.xval) ;})
+          .attr("x", function(d) { return fakeOrdinalXScale(d.xval); })
+          //.attr("width", x.rangeBand())
+          .attr("width", fakeOrdinalXScale.rangeBand())
+          .attr("y", height)
+          .style("opacity", 0)
+          .attr("height", 0)
+          .on("mouseover", function(d){
+              div.transition()
+                  .duration(200)
+                  .style("opacity", 0.9);
+              var formattedDate = formatDate(d.xval);
+              div.html('Date: ' + formattedDate + '<br>Volume: ' + d.zval.toFixed(2))
+                  .style("left", (d3.event.pageX) + "px")
+                  .style("top", (d3.event.pageY) + "px")
+              d3.select(this)
+              .style("fill", "#ffb759")
+              .style("z-index", 1000);
+          })
+          .on("mouseout", function(d){
+              div.transition()
+                  .duration(500)
+                  .style("opacity", 0);
+              d3.select(this)
+                  .style("fill", "#f4d142");
+          })
+          //animate the
+          .transition().duration(1500)
+          //.transition().duration(1000)
+          //opacity low to high
+          .attr("y", function(d){return z(d.zval);})
+          .attr("height", function(d){ return height - z(d.zval);})
+          .style("opacity", 1);
+
+
+  var line = svg.append("path")
+          .attr("class", "y line")
+          .style("opacity", 0)
+          .attr("d", valueline(data))
+          ;
+
+
+          svg.selectAll("dot")
+          //filter without some defintion just return all of the points
+            .data(data)
+            .enter()
+              .append("circle")
+              //again we aren't really filtering anything here, but we could.
+              //here we are filtering out non-value points on the y axis
+              .filter(function(d){ return d.yval !== null;})
+              .attr("r", 3)
+              .attr("cx", function(d){ return fakeOrdinalXScale(d.xval) + fakeOrdinalXScale.rangeBand()/2;})
+              .attr("cy", 0)
+              .style("opacity", 0)
+
+              .on("mouseover", function(d){
+                  div.transition()
+                      .duration(200)
+                      .style("opacity", 0.9);
+                  d3.select(this).attr("r", 6);
+                  var formattedDate = formatDate(d.xval);
+                  div.html('Date: ' + formattedDate + '<br>NPS Score: ' + d.yval.toFixed(2))
+                      .style("left", (d3.event.pageX) + "px")
+                      .style("top", (d3.event.pageY) - 50 + "px");
+              })
+              .on("mouseout", function(d){
+                  div.transition()
+                      .duration(500)
+                      .style("opacity", 0);
+                  d3.select(this).attr("r", 3);
+              })
+              //animate the dots
+              .transition().duration(2000)
+              .attr("cy", function(d){ return y(d.yval);})
+              .style("opacity", 1)
+              ;
+
+
+
+          var totalLength = line.node().getTotalLength();
+        line
+          .attr("stroke-dasharray", totalLength + " " + totalLength)
+          .attr("stroke-dashoffset", totalLength)
+          .transition().delay(1500).duration(1500)
+          .ease("linear")
+          .attr("stroke-dashoffset", 0)
+          .style("opacity", 1);
+
+      });
+
+    </script>
+  </body>
+</html>
