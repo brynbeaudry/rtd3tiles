@@ -77,7 +77,7 @@
 
               var fakeOrdinalXScale = d3.scale.ordinal()
                   .domain(_.pluck(data, 'xval'))
-                  .rangeRoundBands([0, width], 0.4, 0);
+                  .rangeRoundBands([0, width], 0.6, .1);
 
       }else{
         alert("your data type isn't recognized.");
@@ -146,7 +146,7 @@
         //append this group to the svg
         svg.append("g")
             .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")") //moves it down to the bottom
+            .attr("transform", "translate(0," + height +  ")") //moves it down to the bottom
             .call(xAxis)
           .selectAll("text")
             .style("text-anchor", "end")
@@ -185,7 +185,9 @@ var bars =  svg.selectAll("bar")
 
         bars.enter().append("rect")
           .style("fill", "#f4d142")
+          //.style("border", "1 1 0 1")
           .style("stroke", "#bca134")
+          .style("stroke-width", ".5")
           .style("z-index", function(d,i){ return -i;})
           //.attr("x", function(d){return x(d.xval) ;})
           .attr("x", function(d) { return fakeOrdinalXScale(d.xval); })
@@ -203,8 +205,7 @@ var bars =  svg.selectAll("bar")
                   .style("left", (d3.event.pageX) + "px")
                   .style("top", (d3.event.pageY) + "px")
               d3.select(this)
-              .style("fill", "#ffb759")
-              .style("z-index", 1000);
+              .style("fill", "#ffb759");
           })
           .on("mouseout", function(d){
               div.transition()
@@ -217,7 +218,7 @@ var bars =  svg.selectAll("bar")
           .transition().duration(1500)
           //.transition().duration(1000)
           //opacity low to high
-          .attr("y", function(d){return z(d.zval);})
+          .attr("y", function(d){return z(d.zval + 3);})
           .attr("height", function(d){ return height - z(d.zval);})
           .style("opacity", 1);
 

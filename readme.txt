@@ -16,3 +16,21 @@ Good, bar and line:
 
 Make Jquery tooltip:
 http://codepen.io/coquin/pen/BNpQoO
+
+bars currently go overtop x axis, border bottom
+
+labels should be on the outside
+
+Volume rotated clockwise.
+
+
+font : roboto
+smaller font.
+606060 font color
+
+make the graph scalable !!!1
+
+I have alternating tick marks, get
+
+browser testing
+chrome: good.

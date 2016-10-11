@@ -7,6 +7,10 @@ path {
     z-index: 10;
 }
 
+.x-axis {
+  z-index: 1000;
+}
+
 .axis path,
 .axis line {
     fill: none;
